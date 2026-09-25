@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BHU Placement Score Calculator</title>
+<style>
+:root{
+  --green:#1E5B3A; --green-d:#153F28; --gold:#B8860B; --bg:#F4F7F4; --card:#ffffff;
+  --ink:#1F2A24; --muted:#5B6660; --border:#DCE5DE; --danger:#A61C1C; --warnbg:#FFF6DD;
+}
+:root:not([data-theme="light"]){ }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10140F; --card:#171D17; --ink:#EAF0EA; --muted:#9AA79E; --border:#2A342B; --warnbg:#2A2510;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10140F; --card:#171D17; --ink:#EAF0EA; --muted:#9AA79E; --border:#2A342B; --warnbg:#2A2510;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.wrap{max-width:520px; margin:0 auto; padding:20px 16px 40px;}
+.header{background:var(--green); color:#fff; border-radius:14px; padding:20px 18px; margin-bottom:16px;}
+.header h1{margin:0 0 4px; font-size:20px; font-weight:700;}
+.header p{margin:0; font-size:13px; color:#DCEBDF; line-height:1.5;}
+.card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:14px;}
+.card h2{margin:0 0 12px; font-size:15px; color:var(--green); font-weight:700;}
+:root[data-theme="dark"] .card h2, @media (prefers-color-scheme:dark){}
+label{display:block; font-size:13px; color:var(--muted); margin:10px 0 4px;}
+label:first-of-type{margin-top:0;}
+input[type=number]{
+  width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+  background:transparent; color:var(--ink); font-size:16px;
+}
+input[type=number]:focus{outline:2px solid var(--gold); outline-offset:1px;}
+.row{display:flex; gap:10px;}
+.row > div{flex:1;}
+.hint{font-size:11.5px; color:var(--muted); margin-top:3px;}
+button{
+  width:100%; margin-top:14px; padding:13px; border:none; border-radius:10px;
+  background:var(--green); color:#fff; font-size:15px; font-weight:700; cursor:pointer;
+}
+button:active{transform:scale(0.98);}
+.result{display:none;}
+.result.show{display:block;}
+.scorebig{font-size:38px; font-weight:800; color:var(--green); text-align:center; margin:4px 0 2px;}
+.scoresub{text-align:center; color:var(--muted); font-size:12.5px; margin-bottom:14px;}
+.breakdown{width:100%; border-collapse:collapse; font-size:13px;}
+.breakdown td{padding:7px 4px; border-bottom:1px solid var(--border);}
+.breakdown td:last-child{text-align:right; font-weight:700;}
+.deptrow{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 6px; border-bottom:1px solid var(--border); font-size:13.5px;
+}
+.deptrow:last-child{border-bottom:none;}
+.tag{font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px;}
+.tag.ok{background:#E1F5EE; color:#085041;}
+.tag.risk{background:var(--warnbg); color:#8A5A00;}
+.tag.low{background:#FAECE7; color:#A61C1C;}
+@media (prefers-color-scheme:dark){
+  .tag.ok{background:#0F6E56; color:#E1F5EE;} .tag.risk{background:#5A4300; color:#FAEEDA;} .tag.low{background:#712B13; color:#FCEBEB;}
+}
+.err{color:var(--danger); font-size:12.5px; margin-top:4px; display:none;}
+.note{background:var(--warnbg); border-radius:10px; padding:12px 14px; font-size:12.5px; color:var(--ink); line-height:1.6; margin-top:14px;}
+.foot{text-align:center; font-size:11px; color:var(--muted); margin-top:18px; line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>Placement score calculator</h1>
+    <p>Bule Hora University · Estimate your placement score from GPA, entrance exam and COC, and see how it compares to department intake capacity.</p>
+  </div>
+
+  <div class="card">
+    <h2>Your scores</h2>
+    <label for="gpa">Cumulative GPA (out of 4.0)</label>
+    <input type="number" id="gpa" step="0.01" min="0" max="4" placeholder="e.g. 3.40">
+    <div class="err" id="err-gpa">Enter a GPA between 0 and 4.</div>
+
+    <label for="ent">University entrance exam score (out of 600)</label>
+    <input type="number" id="ent" step="0.01" min="0" max="600" placeholder="e.g. 325.75">
+    <div class="err" id="err-ent">Enter a score between 0 and 600.</div>
+
+    <label for="coc">COC score (out of 30)</label>
+    <input type="number" id="coc" step="0.1" min="0" max="30" placeholder="e.g. 20">
+    <div class="err" id="err-coc">Enter a score between 0 and 30.</div>
+
+    <button id="calcBtn">Calculate my score</button>
+  </div>
+
+  <div class="card result" id="resultCard">
+    <h2>Your placement score</h2>
+    <div class="scorebig" id="scoreOut">--</div>
+    <div class="scoresub">out of 100 (50% GPA + 20% entrance + 30% COC)</div>
+    <table class="breakdown">
+      <tr><td>GPA contribution (50%)</td><td id="gpaContrib">--</td></tr>
+      <tr><td>Entrance contribution (20%)</td><td id="entContrib">--</td></tr>
+      <tr><td>COC contribution (30%)</td><td id="cocContrib">--</td></tr>
+    </table>
+  </div>
+
+  <div class="card result" id="deptCard">
+    <h2>Where you could realistically compete</h2>
+    <div id="deptList"></div>
+    <div class="note">
+      This tool applies the standard 50/20/30 weighting to the numbers you enter. It cannot see actual departmental cut-off scores or how many other students are applying, so treat the "chance" labels as a rough guide, not a guarantee. Always confirm your real result and cut-offs with the registrar's office.
+    </div>
+  </div>
+
+  <div class="foot">Built as a student project to help incoming Bule Hora University students understand the 50/20/30 placement formula.</div>
+</div>
+
+<script>
+const depts = [
+  {name:"Computer Science", intake:17, tier:3},
+  {name:"Information Technology", intake:18, tier:3},
+  {name:"Information System", intake:16, tier:3},
+  {name:"Medical Laboratory Sciences", intake:19, tier:2},
+  {name:"Nursing", intake:23, tier:1},
+  {name:"Public Health", intake:23, tier:1},
+  {name:"Midwifery", intake:22, tier:1},
+  {name:"Statistics", intake:16, tier:2},
+  {name:"Agricultural Economics", intake:22, tier:1},
+];
+
+function round1(n){ return Math.round(n*10)/10; }
+
+function validate(){
+  let ok = true;
+  const checks = [
+    ["gpa","err-gpa",0,4],
+    ["ent","err-ent",0,600],
+    ["coc","err-coc",0,30]
+  ];
+  for(const [id,errId,min,max] of checks){
+    const val = parseFloat(document.getElementById(id).value);
+    const errEl = document.getElementById(errId);
+    if(isNaN(val) || val<min || val>max){
+      errEl.style.display = "block"; ok = false;
+    } else {
+      errEl.style.display = "none";
+    }
+  }
+  return ok;
+}
+
+document.getElementById("calcBtn").addEventListener("click", () => {
+  if(!validate()) return;
+  const gpa = parseFloat(document.getElementById("gpa").value);
+  const ent = parseFloat(document.getElementById("ent").value);
+  const coc = parseFloat(document.getElementById("coc").value);
+
+  const gpaC = round1((gpa/4)*50);
+  const entC = round1((ent/600)*20);
+  const cocC = round1(coc);
+  const total = round1(gpaC + entC + cocC);
+
+  document.getElementById("scoreOut").textContent = total;
+  document.getElementById("gpaContrib").textContent = gpaC;
+  document.getElementById("entContrib").textContent = entC;
+  document.getElementById("cocContrib").textContent = cocC;
+  document.getElementById("resultCard").classList.add("show");
+
+  const list = document.getElementById("deptList");
+  list.innerHTML = "";
+  depts.forEach(d => {
+    let tagClass, tagText;
+    const threshold = d.tier===3 ? 78 : d.tier===2 ? 70 : 60;
+    if(total >= threshold+5){ tagClass="ok"; tagText="Good chance"; }
+    else if(total >= threshold-8){ tagClass="risk"; tagText="Competitive"; }
+    else { tagClass="low"; tagText="Unlikely"; }
+    const row = document.createElement("div");
+    row.className = "deptrow";
+    row.innerHTML = `<span>${d.name} <span style="color:var(--muted); font-size:11.5px;">(${d.intake} seats)</span></span><span class="tag ${tagClass}">${tagText}</span>`;
+    list.appendChild(row);
+  });
+  document.getElementById("deptCard").classList.add("show");
+  document.getElementById("deptCard").scrollIntoView({behavior:"smooth", block:"nearest"});
+});
+</script>
+</body>
+</html>
